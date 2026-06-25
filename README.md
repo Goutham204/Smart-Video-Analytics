@@ -1,5 +1,5 @@
 # Smart Video Analytics System
-A serverless computer vision system for real-time people detection, crowd monitoring, and bidirectional line-crossing analytics — built on AWS Lambda, S3, and DynamoDB.
+A serverless computer vision system for real-time people detection, crowd monitoring, and bidirectional line-crossing analytics,built on AWS Lambda, S3, and DynamoDB.
 
 **🔗 Live demo:** https://d1x4qk682zvr1a.cloudfront.net
 
