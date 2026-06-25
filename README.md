@@ -8,9 +8,9 @@ A serverless, AWS-deployed computer vision system for real-time people counting,
 
 ## Overview
 
-This project started as a local Streamlit application with real limitations — no live webcam support in the cloud, a broken line-crossing counter that miscounted on every frame, no persistent storage, and no path to real deployment.
+This project started as a local Streamlit application with real limitations — no live webcam support, a broken line-crossing counter that miscounted on every frame, no persistent storage, and no path to real deployment.
 
-I rebuilt it from the ground up as a properly architected, cloud-native system using AWS serverless infrastructure — keeping costs at effectively $0 when idle while supporting real-time inference via a live webcam or uploaded video.
+I rebuilt it from the ground up as a well-architected, cloud-native system — re-engineered for production deployment on AWS serverless infrastructure, supporting real-time inference via a live webcam feed or an uploaded video file.
 
 ---
 
