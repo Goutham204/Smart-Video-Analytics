@@ -1,0 +1,18 @@
+features:
+  mall:
+    people_counting: true
+    crowd_alert: true
+    crowd_threshold: 10
+    roi: true
+
+  office:
+    people_counting: true
+    crowd_alert: false
+    crowd_threshold: 5
+    roi: false
+
+  metro:
+    people_counting: true
+    crowd_alert: true
+    crowd_threshold: 20
+    roi: false

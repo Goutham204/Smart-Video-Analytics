@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Video Analytics</title>
+<style>
+  :root {
+    --bg: #0E1012;
+    --panel: #16191C;
+    --panel-border: #262A2E;
+    --text-primary: #E8EAEC;
+    --text-secondary: #8A9098;
+    --text-tertiary: #5A6066;
+    --accent: #2DD4A8;
+    --accent-dim: #1A8F6F;
+    --alert: #E25C42;
+    --alert-dim: #8C3A28;
+    --mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    --sans: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  [data-theme="light"] {
+    --bg: #F4F5F6;
+    --panel: #FFFFFF;
+    --panel-border: #DDE1E4;
+    --text-primary: #1A1D20;
+    --text-secondary: #5A6066;
+    --text-tertiary: #8A9098;
+    --accent: #1A8F6F;
+    --accent-dim: #2DD4A8;
+    --alert: #C2462E;
+    --alert-dim: #E25C42;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    margin: 0;
+    padding: 24px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 18px;
+  }
+  .header h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; letter-spacing: 0.02em; }
+  .header p { font-size: 13px; color: var(--text-secondary); margin: 0; font-family: var(--mono); }
+
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  .theme-btn {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text-secondary);
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    border: 1px solid var(--accent-dim); padding: 5px 10px; border-radius: 4px;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .status-dot.live { animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .config-bar {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+  }
+  .field label {
+    display: block; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 6px;
+  }
+  .field select, .field input[type="number"], .field input[type="range"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--text-primary);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 7px 8px;
+    border-radius: 4px;
+  }
+  .field select:focus, .field input:focus { outline: none; border-color: var(--accent-dim); }
+  .field .slider-val { font-family: var(--mono); font-size: 12px; }
+
+  .toggle-bar {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: center;
+  }
+  .toggle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+  .toggle-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-dim); }
+  .toggle-item input[type="number"] {
+    width: 56px; background: var(--bg); border: 1px solid var(--panel-border);
+    color: var(--text-primary); font-family: var(--mono); font-size: 12px;
+    padding: 4px 6px; border-radius: 4px;
+  }
+
+  .source-tabs { display: flex; gap: 2px; margin-bottom: 16px; }
+  .source-tabs button {
+    flex: 1; background: var(--panel); border: 1px solid var(--panel-border);
+    color: var(--text-secondary); font-family: var(--sans); font-size: 13px;
+    font-weight: 500; padding: 10px; cursor: pointer; border-radius: 4px;
+  }
+  .source-tabs button.active { background: var(--accent-dim); color: #fff; border-color: var(--accent-dim); }
+
+  .viewfinder {
+    position: relative; background: #000; border-radius: 6px;
+    overflow: hidden; aspect-ratio: 16 / 10; margin-bottom: 16px;
+  }
+  .viewfinder video, .viewfinder img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .corner { position: absolute; width: 22px; height: 22px; border-color: var(--accent); opacity: 0.85; }
+  .corner.tl { top: 10px; left: 10px; border-top: 2px solid; border-left: 2px solid; }
+  .corner.tr { top: 10px; right: 10px; border-top: 2px solid; border-right: 2px solid; }
+  .corner.bl { bottom: 10px; left: 10px; border-bottom: 2px solid; border-left: 2px solid; }
+  .corner.br { bottom: 10px; right: 10px; border-bottom: 2px solid; border-right: 2px solid; }
+
+  .viewfinder-empty {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary); font-family: var(--mono); font-size: 13px; text-align: center; padding: 20px;
+  }
+
+  .controls-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 10px 18px;
+    border-radius: 4px; cursor: pointer; border: 1px solid var(--panel-border);
+    background: var(--panel); color: var(--text-primary);
+  }
+  .btn.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: #fff; }
+  .btn.danger { border-color: var(--alert-dim); color: var(--alert); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  input[type="file"] { color: var(--text-secondary); font-family: var(--mono); font-size: 12px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 6px; padding: 14px 16px; }
+  .stat-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 6px; }
+  .stat-card .value { font-family: var(--mono); font-size: 26px; font-weight: 600; color: var(--text-primary); }
+  .stat-card.alert-on { border-color: var(--alert-dim); background: rgba(226, 92, 66, 0.08); }
+  .stat-card.alert-on .value { color: var(--alert); }
+
+  .footer-note { font-family: var(--mono); font-size: 11px; color: var(--text-tertiary); text-align: center; margin-top: 24px; line-height: 1.6; }
+
+  .panel-section { display: none; }
+  .panel-section.active { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <h1>Smart video analytics</h1>
+      <!-- <p>real-time people counting &middot; crowd alerts &middot; line-crossing tracking</p> -->
+    </div>
+    <div class="header-right">
+      <button class="theme-btn" id="themeBtn" title="Toggle theme">&#9728;</button>
+      <div class="status-pill">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">idle</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="config-bar">
+    <div class="field">
+      <label>Scenario</label>
+      <select id="useCase">
+        <option value="mall">Mall entrance</option>
+        <option value="office">Office door</option>
+        <option value="metro">Metro gate</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Counting line</label>
+      <select id="lineOrientation">
+        <option value="vertical">Vertical (L / R)</option>
+        <option value="horizontal">Horizontal (U / D)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Line position</label>
+      <input type="number" id="linePosition" value="0.5" min="0" max="1" step="0.05">
+    </div>
+    <div class="field">
+      <label>Confidence: <span class="slider-val" id="confidenceVal">0.40</span></label>
+      <input type="range" id="confidence" min="0.1" max="0.9" step="0.05" value="0.4">
+    </div>
+  </div>
+
+  <div class="toggle-bar">
+    <label class="toggle-item"><input type="checkbox" id="toggleDetection" checked> Person detection</label>
+    <label class="toggle-item"><input type="checkbox" id="toggleLineCrossing" checked> Line crossing</label>
+    <label class="toggle-item"><input type="checkbox" id="toggleCrowdAlert"> Force crowd alert</label>
+    <label class="toggle-item">Threshold <input type="number" id="crowdThreshold" value="10" min="1"></label>
+  </div>
+
+  <div class="source-tabs">
+    <button id="tabWebcamBtn" class="active">Live webcam</button>
+    <button id="tabVideoBtn">Upload video</button>
+  </div>
+
+  <div id="panelWebcam" class="panel-section active">
+    <div class="viewfinder">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="camEmptyState" class="viewfinder-empty">click "enable camera" to begin</div>
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+    </div>
+    <div class="controls-row">
+      <button class="btn" id="enableCamBtn">Enable camera</button>
+      <button class="btn" id="disableCamBtn">Disable camera</button>
+      <button class="btn primary" id="startBtn">Start stream</button>
+      <button class="btn" id="stopBtn">Stop</button>
+      <button class="btn danger" id="resetBtn">Reset counts</button>
+    </div>
+  </div>
+
+  <div id="panelVideo" class="panel-section">
+    <div class="viewfinder">
+      <video id="sourceVideo" style="display:none;"></video>
+      <div id="vEmptyState" class="viewfinder-empty">choose a video file to begin</div>
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+    </div>
+    <div class="controls-row">
+      <input type="file" id="videoFile" accept="video/*">
+      <button class="btn primary" id="processBtn">Process video</button>
+      <button class="btn" id="stopVideoBtn">Stop</button>
+      <button class="btn danger" id="resetVideoBtn">Reset counts</button>
+    </div>
+  </div>
+
+  <div class="viewfinder" id="resultViewfinder" style="display:none;">
+    <img id="resultImg">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+  </div>
+  <div class="controls-row" id="snapshotRow" style="display:none;">
+    <button class="btn" id="snapshotBtn">Download snapshot</button>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="label">People detected</div>
+      <div class="value" id="statPeople">–</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">In</div>
+      <div class="value" id="statIn">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Out</div>
+      <div class="value" id="statOut">0</div>
+    </div>
+    <div class="stat-card" id="cardAlert">
+      <div class="label">Crowd alert</div>
+      <div class="value" id="statAlert">no</div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    backend: aws lambda + yolov8 &middot; s3 &middot; dynamodb
+  </div>
+
+</div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+  const API_BASE = 'https://t5uu3moj2gsi32pzr6yjtqznrq0qwoko.lambda-url.us-east-1.on.aws';
+  function apiUrl(path) { return API_BASE.replace(/\/$/, '') + path; }
+
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    themeBtn.innerHTML = isLight ? '&#9728;' : '&#9789;';
+  });
+
+  const confidenceSlider = document.getElementById('confidence');
+  const confidenceVal = document.getElementById('confidenceVal');
+  confidenceSlider.addEventListener('input', () => {
+    confidenceVal.textContent = parseFloat(confidenceSlider.value).toFixed(2);
+  });
+
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  function setStatus(text, live) {
+    statusText.textContent = text;
+    statusDot.classList.toggle('live', !!live);
+  }
+
+  const statPeople = document.getElementById('statPeople');
+  const statIn = document.getElementById('statIn');
+  const statOut = document.getElementById('statOut');
+  const statAlert = document.getElementById('statAlert');
+  const cardAlert = document.getElementById('cardAlert');
+  const resultViewfinder = document.getElementById('resultViewfinder');
+  const resultImg = document.getElementById('resultImg');
+  const snapshotRow = document.getElementById('snapshotRow');
+  const snapshotBtn = document.getElementById('snapshotBtn');
+
+  function applyResult(data) {
+    statPeople.textContent = data.person_count;
+    statIn.textContent = data.line_in;
+    statOut.textContent = data.line_out;
+    statAlert.textContent = data.crowd_alert ? 'yes' : 'no';
+    cardAlert.classList.toggle('alert-on', !!data.crowd_alert);
+    if (data.annotated_image) {
+      resultImg.src = 'data:image/jpeg;base64,' + data.annotated_image;
+      resultViewfinder.style.display = 'block';
+      snapshotRow.style.display = 'flex';
+    }
+  }
+
+  snapshotBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.href = resultImg.src;
+    link.download = 'detection_snapshot_' + Date.now() + '.jpg';
+    link.click();
+  });
+
+  const tabWebcamBtn = document.getElementById('tabWebcamBtn');
+  const tabVideoBtn = document.getElementById('tabVideoBtn');
+  const panelWebcam = document.getElementById('panelWebcam');
+  const panelVideo = document.getElementById('panelVideo');
+
+  tabWebcamBtn.addEventListener('click', () => {
+    tabWebcamBtn.classList.add('active'); tabVideoBtn.classList.remove('active');
+    panelWebcam.classList.add('active'); panelVideo.classList.remove('active');
+  });
+  tabVideoBtn.addEventListener('click', () => {
+    tabVideoBtn.classList.add('active'); tabWebcamBtn.classList.remove('active');
+    panelVideo.classList.add('active'); panelWebcam.classList.remove('active');
+    disableWebcam();
+  });
+
+  const canvas = document.getElementById('canvas');
+  const video = document.getElementById('video');
+  const camEmptyState = document.getElementById('camEmptyState');
+  const enableCamBtn = document.getElementById('enableCamBtn');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let sessionId = 'session_' + Math.random().toString(36).substring(2, 12);
+  let streaming = false;
+  let intervalHandle = null;
+  let inFlight = false;
+  let webcamStream = null;
+
+  async function enableWebcam() {
+    try {
+      webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = webcamStream;
+      camEmptyState.style.display = 'none';
+      setStatus('camera ready', false);
+    } catch (err) {
+      setStatus('camera denied', false);
+    }
+  }
+  function disableWebcam() {
+    streaming = false;
+    clearInterval(intervalHandle);
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(t => t.stop());
+      webcamStream = null;
+      video.srcObject = null;
+      camEmptyState.style.display = 'flex';
+    }
+  }
+  enableCamBtn.addEventListener('click', enableWebcam);
+  document.getElementById('disableCamBtn').addEventListener('click', disableWebcam);
+
+  function getToggleParams() {
+    return {
+      enable_detection: document.getElementById('toggleDetection').checked ? 'true' : 'false',
+      enable_line_crossing: document.getElementById('toggleLineCrossing').checked ? 'true' : 'false',
+      enable_crowd_alert: document.getElementById('toggleCrowdAlert').checked ? 'true' : 'false',
+      crowd_threshold: document.getElementById('crowdThreshold').value,
+      confidence: document.getElementById('confidence').value,
+      use_case: document.getElementById('useCase').value,
+      line_orientation: document.getElementById('lineOrientation').value,
+      line_position: document.getElementById('linePosition').value,
+    };
+  }
+
+  async function captureAndSend() {
+    if (inFlight) return;
+    inFlight = true;
+    const params = getToggleParams();
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    canvas.toBlob(async (blob) => {
+      const formData = new FormData();
+      formData.append('file', blob, 'frame.jpg');
+      Object.entries(params).forEach(([k, v]) => formData.append(k, v));
+      formData.append('session_id', sessionId);
+
+      try {
+        const response = await fetch(apiUrl('/detect'), { method: 'POST', body: formData });
+        const data = await response.json();
+        if (response.ok) { setStatus('live', true); applyResult(data); }
+        else { setStatus('error ' + response.status, false); }
+      } catch (err) {
+        setStatus('connection failed', false);
+      } finally {
+        inFlight = false;
+      }
+    }, 'image/jpeg');
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (!webcamStream) { setStatus('enable camera first', false); return; }
+    if (streaming) return;
+    streaming = true;
+    setStatus('connecting', true);
+    intervalHandle = setInterval(captureAndSend, 900);
+  });
+  stopBtn.addEventListener('click', () => {
+    streaming = false;
+    clearInterval(intervalHandle);
+    setStatus('idle', false);
+  });
+  resetBtn.addEventListener('click', async () => {
+    const formData = new FormData();
+    formData.append('session_id', sessionId);
+    try { await fetch(apiUrl('/reset_session'), { method: 'POST', body: formData }); } catch (e) {}
+    sessionId = 'session_' + Math.random().toString(36).substring(2, 12);
+    statIn.textContent = '0'; statOut.textContent = '0';
+    setStatus(streaming ? 'live' : 'idle', streaming);
+  });
+
+  const videoFileInput = document.getElementById('videoFile');
+  const sourceVideo = document.getElementById('sourceVideo');
+  const vEmptyState = document.getElementById('vEmptyState');
+  const processBtn = document.getElementById('processBtn');
+  const stopVideoBtn = document.getElementById('stopVideoBtn');
+  const resetVideoBtn = document.getElementById('resetVideoBtn');
+
+  let videoSessionId = 'vsession_' + Math.random().toString(36).substring(2, 12);
+  let processingVideo = false;
+
+  videoFileInput.addEventListener('change', () => {
+    const file = videoFileInput.files[0];
+    if (file) {
+      sourceVideo.src = URL.createObjectURL(file);
+      sourceVideo.style.display = 'block';
+      vEmptyState.style.display = 'none';
+    }
+  });
+
+  async function sendVideoFrame() {
+    const params = getToggleParams();
+
+    canvas.width = sourceVideo.videoWidth;
+    canvas.height = sourceVideo.videoHeight;
+    canvas.getContext('2d').drawImage(sourceVideo, 0, 0);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+
+    const formData = new FormData();
+    formData.append('file', blob, 'frame.jpg');
+    Object.entries(params).forEach(([k, v]) => formData.append(k, v));
+    formData.append('session_id', videoSessionId);
+
+    try {
+      const response = await fetch(apiUrl('/detect'), { method: 'POST', body: formData });
+      const data = await response.json();
+      if (response.ok) { setStatus('processing', true); applyResult(data); }
+      else { setStatus('error ' + response.status, false); }
+    } catch (err) {
+      setStatus('connection failed', false);
+    }
+  }
+
+  async function processLoop() {
+    const frameSkip = 10;
+    const frameStep = 0.1;
+    while (processingVideo && sourceVideo.currentTime < sourceVideo.duration) {
+      await sendVideoFrame();
+      sourceVideo.currentTime += frameStep * frameSkip;
+      if (sourceVideo.currentTime >= sourceVideo.duration) break;
+    }
+    processingVideo = false;
+    setStatus('idle', false);
+  }
+
+  processBtn.addEventListener('click', () => {
+    if (!sourceVideo.src) { setStatus('choose a video first', false); return; }
+    if (processingVideo) return;
+    processingVideo = true;
+    sourceVideo.pause();
+    sourceVideo.currentTime = 0;
+    setStatus('processing', true);
+    processLoop();
+  });
+  stopVideoBtn.addEventListener('click', () => {
+    processingVideo = false;
+    setStatus('idle', false);
+  });
+  resetVideoBtn.addEventListener('click', async () => {
+    const formData = new FormData();
+    formData.append('session_id', videoSessionId);
+    try { await fetch(apiUrl('/reset_session'), { method: 'POST', body: formData }); } catch (e) {}
+    videoSessionId = 'vsession_' + Math.random().toString(36).substring(2, 12);
+    statIn.textContent = '0'; statOut.textContent = '0';
+    setStatus('idle', false);
+  });
+</script>
+</body>
+</html>
